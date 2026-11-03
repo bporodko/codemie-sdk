@@ -186,6 +186,35 @@ describe("ApiRequestHandler", () => {
       });
     });
 
+    it("should make a PATCH request and return response data", async () => {
+      const axiosInstance = axios.create();
+      const patchData = { key: "patched" };
+
+      const result = await apiRequestHandler.patch("/test-path", patchData);
+
+      expect(axiosInstance.request).toHaveBeenCalledWith({
+        method: "patch",
+        url: "/test-path",
+        data: patchData,
+      });
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("should pass params and paramsSerializer through on DELETE", async () => {
+      const axiosInstance = axios.create();
+      const paramsSerializer = (p: Record<string, string[]>) =>
+        p.user_id.map((v) => `user_id=${v}`).join("&");
+      const params = { user_id: ["a", "b"] };
+
+      await apiRequestHandler.delete("/test-path", { params, paramsSerializer });
+
+      const call = (axiosInstance.request as jest.Mock).mock.calls[0][0] as {
+        params: Record<string, string[]>;
+        paramsSerializer: (p: Record<string, string[]>) => string;
+      };
+      expect(call.paramsSerializer(call.params)).toBe("user_id=a&user_id=b");
+    });
+
     it("should make a DELETE request with correct parameters", async () => {
       const axiosInstance = axios.create();
 
