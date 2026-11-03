@@ -687,7 +687,7 @@ if client.projects.project_exists("my-project"):
     ...
 ```
 
-`project_exists` returns `False` when the project is not found or not visible to the caller (HTTP 404); other HTTP errors are re-raised. It reads the full project detail. The SDK sets no default request timeout. A failed bulk call may be partly applied, so re-read the members before retrying a remove. See the [parity guide](../../docs/PARITY.md) for differences from the Node.js SDK.
+`project_exists` returns `False` when the project is not found or not visible to the caller (HTTP 404); other HTTP errors are re-raised. Any 404 on that path counts, including one caused by a wrong base URL, a proxy or an older backend, so a misconfigured `api_domain` reports every project as missing. It reads the full project detail. The SDK sets no default request timeout. A failed bulk call may be partly applied, so re-read the members before retrying a remove. See the [parity guide](../../docs/PARITY.md) for differences from the Node.js SDK.
 
 ### Workflow Service
 

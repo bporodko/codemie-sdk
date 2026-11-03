@@ -34,10 +34,12 @@ export class UserService {
   }
 
   private adminPath(id: string, ...rest: string[]): string {
+    if (!id) throw new Error("user id must not be empty");
     return ["/v1/admin/users", encodeURIComponent(id), ...rest].join("/");
   }
 
   private memberPath(userId: string, projectName: string, ...rest: string[]): string {
+    if (!projectName) throw new Error("projectName must not be empty");
     return this.adminPath(userId, "projects", encodeURIComponent(projectName), ...rest);
   }
 

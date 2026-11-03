@@ -53,6 +53,7 @@ export interface ProjectListItem {
   cost_center_id?: string | null;
   cost_center_name?: string | null;
   spending?: number | null;
+  current_spending?: number | null;
   budgets?: ProjectBudgetItem[] | null;
   chargeback_enabled?: boolean;
   chargeback_attribution?: string;

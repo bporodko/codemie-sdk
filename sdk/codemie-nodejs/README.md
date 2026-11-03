@@ -723,7 +723,7 @@ Notes:
 
 - Bulk assign accepts 1 to 1000 users and bulk remove 1 to 100 ids; anything else throws a zod error before the request is sent.
 - A failed bulk call may be partly applied. Re-read the project members before retrying a remove.
-- `projectExists` returns `false` when the project is not found or not visible to the caller. Any 404 on that path counts as `false`; other errors are rethrown. It reads the full project detail, not a lightweight probe.
+- `projectExists` returns `false` when the project is not found or not visible to the caller. Any 404 on that path counts as `false`, including one caused by a wrong base URL, a proxy or an older backend, so a misconfigured `apiDomain` reports every project as missing; other errors are rethrown. It reads the full project detail, not a lightweight probe.
 - Neither SDK sets a default request timeout; configure one on your side if you need it.
 
 ### User Admin Methods

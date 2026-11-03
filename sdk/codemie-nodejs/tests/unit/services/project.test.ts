@@ -15,7 +15,8 @@ describe("ProjectService", () => {
 
   const users = (n: number) =>
     Array.from({ length: n }, (_, i) => ({ user_id: `u${i}`, is_project_admin: false }));
-  const ids = (n: number) => Array.from({ length: n }, (_, i) => `u${i}`);
+  const ids = (n: number) =>
+    Array.from({ length: n }, (_, i) => `${String(i).padStart(8, "0")}-aaaa-bbbb-cccc-dddddddddddd`);
 
   beforeEach(() => {
     api = {
@@ -57,7 +58,27 @@ describe("ProjectService", () => {
     expect(result).toEqual({ name: "a b", members: [] });
   });
 
+  describe("empty ids", () => {
+    it("rejects an empty projectName without a request", async () => {
+      await expect(service.getProjectDetail("")).rejects.toThrow("must not be empty");
+      expect(api.get).not.toHaveBeenCalled();
+    });
+  });
+
   describe("listProjects", () => {
+    it("types current_spending on list items", async () => {
+      const item: import("../../../src/models/project").ProjectListItem = {
+        name: "p",
+        project_type: "shared",
+        user_count: 1,
+        admin_count: 1,
+        current_spending: 1.5,
+      };
+      api.get.mockResolvedValue({ data: [item], pagination: {} });
+      const result: any = await service.listProjects();
+      expect(result.data[0].current_spending).toBe(1.5);
+    });
+
     it("sends the default query and returns the raw body", async () => {
       const body = { data: [], pagination: { total: 0, page: 0, per_page: 20 } };
       api.get.mockResolvedValue(body);

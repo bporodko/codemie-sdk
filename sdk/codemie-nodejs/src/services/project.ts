@@ -33,7 +33,10 @@ function unwrap<T>(body: unknown): T {
   return body as T;
 }
 
-const enc = encodeURIComponent;
+const enc = (v: string): string => {
+  if (!v) throw new Error("path id must not be empty");
+  return encodeURIComponent(v);
+};
 const flag = (value: boolean) => (value ? "True" : "False");
 
 export class ProjectService {

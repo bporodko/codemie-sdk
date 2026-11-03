@@ -16,6 +16,7 @@ jest.mock("axios", () => ({
   }),
 }));
 import axios from "axios";
+import { ProjectService } from "../../../src/services/project";
 
 describe("ApiRequestHandler", () => {
   beforeEach(() => {
@@ -237,6 +238,24 @@ describe("ApiRequestHandler", () => {
         streamData,
         expect.any(Object),
       );
+    });
+  });
+
+  describe("projectExists with real 404 mapping", () => {
+    it("resolves false when axios rejects with a 404", async () => {
+      let onError: (e: unknown) => unknown = () => undefined;
+      const client = {
+        interceptors: {
+          response: { use: jest.fn((_ok: unknown, err: (e: unknown) => unknown) => (onError = err)) },
+          request: { use: jest.fn() },
+        },
+        request: jest.fn(async () => onError({ response: { status: 404, data: {} } })),
+      };
+      (axios.create as jest.Mock).mockReturnValue(client);
+
+      const service = new ProjectService({ apiDomain: "domain", token: "t" });
+
+      await expect(service.projectExists("missing")).resolves.toBe(false);
     });
   });
 
