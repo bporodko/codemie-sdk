@@ -135,8 +135,8 @@ export class UserService {
     await this.api.delete(this.adminPath(id));
   }
 
-  /** Reactivate a user. */
+  /** Reactivate a user. Has its own endpoint: updating with is_active=true is refused by the API. */
   async reactivateUser(id: string): Promise<CodeMieUserDetail> {
-    return this.api.put(this.adminPath(id), { is_active: true });
+    return this.api.post(this.adminPath(id, "reactivate"));
   }
 }

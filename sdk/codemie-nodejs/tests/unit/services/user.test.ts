@@ -237,12 +237,12 @@ describe("UserService", () => {
       expect(result).toBeUndefined();
     });
 
-    it("reactivateUser PUTs is_active true and returns the user", async () => {
+    it("reactivateUser POSTs the reactivate route and returns the user", async () => {
       const user = { id: "u1", is_active: true };
-      apiHandler.put.mockResolvedValue(user);
+      apiHandler.post.mockResolvedValue(user);
 
       const result = await service.reactivateUser("a/b");
-      expect(apiHandler.put).toHaveBeenCalledWith(`${base}/a%2Fb`, { is_active: true });
+      expect(apiHandler.post).toHaveBeenCalledWith(`${base}/a%2Fb/reactivate`);
       expect(result).toBe(user);
     });
   });

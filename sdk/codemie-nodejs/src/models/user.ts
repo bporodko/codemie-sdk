@@ -107,6 +107,7 @@ export interface AdminUserUpdate {
   picture?: string | null;
   is_admin?: boolean;
   is_maintainer?: boolean;
+  /** Only `false` is accepted here; use reactivateUser to set a user active again. */
   is_active?: boolean;
   project_limit?: number | null;
 }

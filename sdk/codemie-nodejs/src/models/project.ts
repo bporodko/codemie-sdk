@@ -83,6 +83,10 @@ export interface ProjectDetail {
   cost_center_id?: string | null;
   cost_center_name?: string | null;
   members: ProjectMember[];
+  enforce_member_spend_limits?: boolean;
+  chargeback_enabled?: boolean;
+  allowed_models?: string[] | null;
+  default_model?: string | null;
   chargeback_attribution?: string;
   cli_analytics_enabled?: boolean | null;
 }
