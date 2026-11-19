@@ -100,12 +100,14 @@ export interface Assistant extends AssistantBase {
   assistant_ids: string[];
   categories?: AssistantCategory[];
   context: Context[];
+  disabled_context_tools: string[];
   skill_ids?: string[];
   conversation_starters: string[];
   created_date?: string;
   creator: string;
   is_global: boolean;
   is_react: boolean;
+  hide_tool_outputs?: boolean;
   llm_model_type?: string;
   mcp_servers: MCPServerDetails[];
   nested_assistants: Partial<Assistant>[];
@@ -173,6 +175,7 @@ export interface AssistantVersion {
   mcp_servers: MCPServerDetails[];
   assistant_ids: string[];
   prompt_variables?: PromptVariable[];
+  disabled_context_tools: string[];
   // allow future fields without breaking consumers
   [key: string]: unknown;
 }
@@ -203,6 +206,15 @@ export interface IntegrationValidationResult {
 export interface AssistantCreateResponse {
   message: string;
   assistant_id?: string;
+  validation?: IntegrationValidationResult;
+}
+
+/** Wire responses differ between platform versions; services expose assistant_id. */
+export interface AssistantCreateApiResponse {
+  message: string;
+  assistant_id?: string | null;
+  assistantId?: string | null;
+  id?: string | null;
   validation?: IntegrationValidationResult;
 }
 

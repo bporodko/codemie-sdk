@@ -32,10 +32,12 @@ from ..models.assistant import (
     AssistantProjectFeature,
     AssistantProjectMappingListResponse,
     AssistantProjectMappingRequest,
+    SubAssistantPublishSettings,
 )
 from ..models.common import PaginationParams
 from ..models.conversation import BaseResponse
 from ..utils import ApiRequestHandler, TokenSource
+from ..utils.payload import without_none
 
 
 class AssistantService:
@@ -136,10 +138,17 @@ class AssistantService:
         Returns:
             AssistantUpdateResponse with optional validation results
         """
+        payload = request.model_dump(exclude_none=True)
+        if "hide_tool_outputs" not in request.model_fields_set:
+            # Don't overwrite the stored value with the model default on update.
+            payload.pop("hide_tool_outputs", None)
+        if "effort" in request.model_fields_set and request.effort is None:
+            # exclude_none drops it; send an explicit null so the stored effort is cleared.
+            payload["effort"] = None
         return self._api.put(
             f"/v1/assistants/{assistant_id}",
             AssistantUpdateResponse,
-            json_data=request.model_dump(exclude_none=True),
+            json_data=payload,
         )
 
     def get_tools(self) -> list[ToolKitDetails]:
@@ -319,7 +328,9 @@ class AssistantService:
                     toolkits=version.toolkits
                     if hasattr(version, "toolkits")
                     else assistant.toolkits,
-                    user_prompts=assistant.user_prompts,
+                    disabled_context_tools=version.disabled_context_tools
+                    if hasattr(version, "disabled_context_tools")
+                    else assistant.disabled_context_tools,
                     shared=assistant.shared,
                     is_react=assistant.is_react,
                     is_global=assistant.is_global,
@@ -330,6 +341,9 @@ class AssistantService:
                     assistant_ids=version.assistant_ids
                     if hasattr(version, "assistant_ids")
                     else assistant.assistant_ids,
+                    skill_ids=assistant.skill_ids
+                    if version.skill_ids is None
+                    else version.skill_ids,
                 )
                 update_resp = self.update(assistant_id, update_req)
                 resp = update_resp.model_dump()
@@ -554,18 +568,36 @@ class AssistantService:
         assistant_id: str,
         categories: list[str] | None = None,
         ignore_recommendations: bool = False,
+        force_publish: bool = False,
+        override_notice: str | None = None,
+        sub_assistants_settings: list[SubAssistantPublishSettings] | None = None,
     ) -> dict:
         """Publish an assistant to the marketplace.
         Args:
             assistant_id: ID of the assistant to publish
             categories: List of categories for marketplace classification (e.g., ['quality-assurance'])
             ignore_recommendations: If True, bypass validation and publish anyway
+            force_publish: Admins and maintainers only: publish over CRITICAL gate findings.
+                Requires override_notice.
+            override_notice: Justification for force_publish, 20 to 2000 characters
+            sub_assistants_settings: Per-sub-assistant settings (marketplace visibility,
+                toolkits, mcp_servers, categories) applied when this assistant has
+                sub-assistants
         """
         body = {}
         if categories:
             body["categories"] = categories
         if ignore_recommendations:
             body["ignore_recommendations"] = ignore_recommendations
+        if force_publish:
+            body["force_publish"] = force_publish
+        if override_notice is not None:
+            body["override_notice"] = override_notice
+        if sub_assistants_settings is not None:
+            body["sub_assistants_settings"] = [
+                settings.model_dump(exclude_none=True)
+                for settings in sub_assistants_settings
+            ]
 
         return self._api.post(
             f"/v1/assistants/{assistant_id}/marketplace/publish",
@@ -589,6 +621,121 @@ class AssistantService:
         """
         return self._api.post(
             f"/v1/assistants/{assistant_id}/marketplace/publish/validate", dict
+        )
+
+    def generate(
+        self,
+        text: str,
+        include_tools: bool = True,
+        llm_model: str | None = None,
+    ) -> dict:
+        """Generate assistant details (name, description, system prompt, ...) from a text with AI.
+
+        Nothing is created: the result is a draft to review.
+
+        Args:
+            text: Description of the desired assistant
+            include_tools: Whether to suggest toolkits
+            llm_model: LLM model to use; platform default when omitted
+
+        Returns:
+            Dict with the generated assistant details
+        """
+        return self._api.post(
+            "/v1/assistants/generate",
+            dict,
+            json_data=without_none(
+                {"text": text, "include_tools": include_tools, "llm_model": llm_model}
+            ),
+            wrap_response=False,
+        )
+
+    def generate_prompt(
+        self,
+        text: str | None = None,
+        system_prompt: str | None = None,
+        llm_model: str | None = None,
+    ) -> dict:
+        """Generate or improve an assistant system prompt with AI.
+
+        Args:
+            text: Description of what the assistant should do
+            system_prompt: Existing system prompt to improve
+            llm_model: LLM model to use; platform default when omitted
+
+        Returns:
+            Dict with the generated `system_prompt`
+        """
+        return self._api.post(
+            "/v1/assistants/prompt/generate",
+            dict,
+            json_data=without_none(
+                {
+                    "text": text,
+                    "system_prompt": system_prompt,
+                    "llm_model": llm_model,
+                }
+            ),
+            wrap_response=False,
+        )
+
+    def refine(
+        self,
+        name: str | None = None,
+        description: str | None = None,
+        conversation_starters: list[str] | None = None,
+        system_prompt: str | None = None,
+        toolkits: list[dict] | None = None,
+        context: list[dict] | None = None,
+        categories: list[str] | None = None,
+        refine_prompt: str | None = None,
+        llm_model: str | None = None,
+        include_tools: bool = True,
+        include_context: bool = True,
+        include_categories: bool = True,
+        project: str | None = None,
+    ) -> dict:
+        """Ask AI for recommendations to improve an assistant draft.
+
+        Args:
+            name: Draft assistant name
+            description: Draft assistant description
+            conversation_starters: Draft conversation starters
+            system_prompt: Draft system prompt
+            toolkits: Selected toolkits
+            context: Selected contexts, each with `name` and `context_type`
+            categories: Selected categories
+            refine_prompt: Custom refinement instructions
+            llm_model: LLM model to use; platform default when omitted
+            include_tools: Whether to assess toolkits
+            include_context: Whether to assess contexts
+            include_categories: Whether to assess categories
+            project: Project the draft belongs to
+
+        Returns:
+            Dict with the recommendations
+        """
+        return self._api.post(
+            "/v1/assistants/refine",
+            dict,
+            json_data=without_none(
+                {
+                    "name": name,
+                    "description": description,
+                    "conversation_starters": conversation_starters,
+                    "system_prompt": system_prompt,
+                    "toolkits": toolkits,
+                    "context": context,
+                    "categories": categories,
+                    "refine_prompt": refine_prompt,
+                    "llm_model": llm_model,
+                    "include_tools": include_tools,
+                    "include_context": include_context,
+                    "include_categories": include_categories,
+                    "project": project,
+                }
+            ),
+            wrap_response=False,
         )
 
     def resume_tool_call(
@@ -826,4 +973,84 @@ class AssistantService:
             f"/v1/assistants/{assistant_id}/users/mapping",
             dict,
             params=params or None,
+        )
+
+    def list_shared_with(self, assistant_id: str):
+        """List users explicitly granted per-user access to the assistant (owner only).
+
+        Calls GET /v1/assistants/{assistant_id}/shared-with.
+
+        Args:
+            assistant_id: ID of the assistant
+
+        Returns:
+            SharedWithResponse with the current shared_with list
+        """
+        from ..models.assistant import SharedWithResponse
+
+        return self._api.get(
+            f"/v1/assistants/{assistant_id}/shared-with", SharedWithResponse
+        )
+
+    def share(self, assistant_id: str, user_ids: list[str]):
+        """Grant per-user READ access to the assistant to one or more internal users (owner only).
+
+        Calls POST /v1/assistants/{assistant_id}/share.
+
+        Args:
+            assistant_id: ID of the assistant
+            user_ids: Internal user ids to grant access to
+
+        Returns:
+            SharedWithResponse with the refreshed shared_with list
+        """
+        from ..models.assistant import ShareUsersRequest, SharedWithResponse
+
+        request = ShareUsersRequest(user_ids=user_ids)
+        return self._api.post(
+            f"/v1/assistants/{assistant_id}/share",
+            SharedWithResponse,
+            json_data=request.model_dump(),
+        )
+
+    def revoke_share(self, assistant_id: str, user_ids: list[str]):
+        """Revoke per-user READ access to the assistant for one or more users (owner only).
+
+        Calls DELETE /v1/assistants/{assistant_id}/share.
+
+        Args:
+            assistant_id: ID of the assistant
+            user_ids: Internal user ids to revoke access from
+
+        Returns:
+            SharedWithResponse with the refreshed shared_with list
+        """
+        from ..models.assistant import ShareUsersRequest, SharedWithResponse
+
+        request = ShareUsersRequest(user_ids=user_ids)
+        return self._api.delete(
+            f"/v1/assistants/{assistant_id}/share",
+            SharedWithResponse,
+            json_data=request.model_dump(),
+        )
+
+    def search_sharable_users(self, assistant_id: str, q: str):
+        """Search internal users that can be granted access to the assistant (owner only).
+
+        Calls GET /v1/assistants/{assistant_id}/sharable-users?q=<q>. The backend
+        requires ``q`` to be at least 2 characters (422 otherwise).
+
+        Args:
+            assistant_id: ID of the assistant
+            q: Search query matched against name, username and email
+
+        Returns:
+            SharableUsersResponse listing matching internal users
+        """
+        from ..models.assistant import SharableUsersResponse
+
+        return self._api.get(
+            f"/v1/assistants/{assistant_id}/sharable-users",
+            SharableUsersResponse,
+            params={"q": q},
         )

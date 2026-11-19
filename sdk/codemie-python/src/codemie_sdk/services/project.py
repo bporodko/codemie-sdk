@@ -25,6 +25,8 @@ from ..models.project import (
     BulkAssignmentUserItem,
     CsvImportValidationResponse,
     PaginatedProjectListResponse,
+    ProjectAllowedModelsResponse,
+    ProjectAllowedModelsUpdateRequest,
     ProjectAssignmentRequest,
     ProjectAssignmentResponse,
     ProjectAssignmentUpdateRequest,
@@ -52,6 +54,15 @@ class ProjectService:
             verify_ssl: Whether to verify SSL certificates
         """
         self._api = ApiRequestHandler(api_domain, token, verify_ssl)
+
+    @staticmethod
+    def _cost_center_id(value: UUID | str) -> str:
+        try:
+            return str(UUID(str(value)))
+        except ValueError:
+            raise ValueError(
+                f"cost_center_ids contains an invalid UUID: {value!r}"
+            ) from None
 
     def create_project(
         self,
@@ -100,6 +111,7 @@ class ProjectService:
         has_assigned_budgets: bool = False,
         sort_by: Literal["name", "created_at"] | None = None,
         sort_order: Literal["asc", "desc"] = "asc",
+        cost_center_ids: list[UUID] | None = None,
     ) -> PaginatedProjectListResponse:
         """List projects visible to current user with pagination and search.
 
@@ -112,9 +124,15 @@ class ProjectService:
                 assigned project budget
             sort_by: Sort field (name or created_at); ignored when search is active
             sort_order: Sort direction (asc or desc)
+            cost_center_ids: Return only projects assigned to any of these cost centers;
+                sent as one repeated query parameter per id, omitted when empty or None
 
         Returns:
             PaginatedProjectListResponse with projects and pagination info
+
+        Raises:
+            TypeError: If cost_center_ids is a single value instead of a list
+            ValueError: If cost_center_ids contains an invalid UUID
         """
         params = {
             "page": page,
@@ -129,6 +147,14 @@ class ProjectService:
             params["search"] = search
         if sort_by is not None:
             params["sort_by"] = sort_by
+        if cost_center_ids:
+            if isinstance(cost_center_ids, (str, UUID)):
+                raise TypeError(
+                    "cost_center_ids must be a list of UUIDs, not a single value"
+                )
+            params["cost_center_ids"] = [
+                self._cost_center_id(item) for item in cost_center_ids
+            ]
 
         return self._api.get(
             "/v1/projects",
@@ -226,6 +252,55 @@ class ProjectService:
             f"/v1/projects/{project_name}",
             response_model=ProjectUpdateResponse,
             json_data=payload.model_dump(mode="json", exclude_none=True),
+        )
+
+    def update_allowed_models(
+        self,
+        project_name: str,
+        allowed_models: list[str] | None = None,
+        default_model: str | None = None,
+    ) -> ProjectAllowedModelsResponse:
+        """Change the models a project may use and the model it starts on.
+
+        Args:
+            project_name: Project name
+            allowed_models: Models the project is limited to (optional); a value
+                requires a default model, stored or passed
+            default_model: New default model (optional); the stored one is kept
+                when it is not passed
+
+        Returns:
+            ProjectAllowedModelsResponse with the stored model settings
+
+        Raises:
+            HTTPException: 400 when a model cannot be chosen, 403 without the
+                project admin or maintainer role, 404 when the project is unknown
+        """
+        payload = ProjectAllowedModelsUpdateRequest(
+            allowed_models=allowed_models, default_model=default_model
+        )
+        return self._api.patch(
+            f"/v1/projects/{project_name}/allowed-models",
+            response_model=ProjectAllowedModelsResponse,
+            json_data=payload.model_dump(mode="json", exclude_none=True),
+        )
+
+    def reset_allowed_models(self, project_name: str) -> ProjectAllowedModelsResponse:
+        """Remove the project's model restriction and its default model.
+
+        Args:
+            project_name: Project name
+
+        Returns:
+            ProjectAllowedModelsResponse with both settings cleared
+
+        Raises:
+            HTTPException: 403 without the project admin or maintainer role,
+                404 when the project is unknown
+        """
+        return self._api.delete(
+            f"/v1/projects/{project_name}/allowed-models",
+            response_model=ProjectAllowedModelsResponse,
         )
 
     def delete_project(self, project_name: str) -> ProjectDeleteResponse:

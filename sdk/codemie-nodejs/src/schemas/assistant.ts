@@ -79,6 +79,7 @@ export const AssistantCreateParamsSchema = z
     conversation_starters: z.array(z.string()),
     shared: z.boolean().optional(),
     is_react: z.boolean().optional(),
+    hide_tool_outputs: z.boolean().optional(),
     is_global: z.boolean().optional(),
     slug: z.string().optional().nullable(),
     temperature: z.number().optional().nullable(),
@@ -111,6 +112,7 @@ export const AssistantCreateParamsSchema = z
       .optional()
       .nullable(),
     skip_integration_validation: z.boolean().optional().default(false),
+    disabled_context_tools: z.array(z.string()).optional(),
   })
   .readonly();
 // In order to make sure that default values are applied correctly, we use z.input here

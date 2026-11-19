@@ -123,6 +123,7 @@ class AssistantDataItem(BaseModel):
     context: list[ContextItem | str] | None = None
     tools: list[ToolItem] | None = None
     conversation_starters: list[str] = []
+    hide_tool_outputs: bool = False
 
 
 class ConversationDetailsData(BaseModel):
@@ -145,6 +146,7 @@ class AssistantDetailsData(BaseModel):
     context: list[ContextItem | str]
     tools: list[ToolItem]
     conversation_starters: list[str]
+    hide_tool_outputs: bool = False
 
 
 class ConversationCreateRequest(BaseModel):
@@ -186,6 +188,7 @@ class ConversationDetails(BaseModel):
     category: str | None
     mcp_server_single_usage: bool | None = False
     finished_at: datetime | None = None
+    attributes: dict[str, str] | None = None
 
 
 class ConversationShareRequest(BaseModel):

@@ -115,6 +115,41 @@ describe("AssistantCreateParamsSchema mcp_servers.config", () => {
   });
 });
 
+describe("hide_tool_outputs", () => {
+  const VALID = {
+    name: "A",
+    description: "D",
+    system_prompt: "P",
+    project: "proj",
+    context: [],
+    llm_model_type: "gpt-4",
+    toolkits: [],
+    conversation_starters: [],
+    assistant_ids: [],
+    mcp_servers: [],
+  };
+
+  it("accepts true and false on create", () => {
+    expect(
+      AssistantCreateParamsSchema.parse({ ...VALID, hide_tool_outputs: true }).hide_tool_outputs,
+    ).toBe(true);
+    expect(
+      AssistantCreateParamsSchema.parse({ ...VALID, hide_tool_outputs: false }).hide_tool_outputs,
+    ).toBe(false);
+  });
+
+  it("leaves the key absent when not provided (update must not reset it)", () => {
+    const parsed = AssistantUpdateParamsSchema.parse({ ...VALID });
+    expect("hide_tool_outputs" in parsed).toBe(false);
+  });
+
+  it("rejects non-boolean values", () => {
+    expect(() =>
+      AssistantCreateParamsSchema.parse({ ...VALID, hide_tool_outputs: "yes" }),
+    ).toThrow();
+  });
+});
+
 describe("AssistantCreateParamsSchema mcp_servers pass-through", () => {
   const base = {
     name: "A",
@@ -490,6 +525,45 @@ describe("AssistantCreateParamsSchema API-echo nulls", () => {
         ...echoedFromApi,
         mcp_servers: [{ name: "s", enabled: true, config: { command: "npx", url: "https://a" } }],
       }),
+    ).toThrow();
+  });
+});
+
+describe("AssistantCreateParamsSchema disabled_context_tools", () => {
+  const base = {
+    name: "A",
+    description: "D",
+    system_prompt: "P",
+    project: "proj",
+    context: [],
+    llm_model_type: "gpt-4",
+    toolkits: [],
+    conversation_starters: [],
+    assistant_ids: [],
+    mcp_servers: [],
+  };
+
+  it("accepts a list of tool names", () => {
+    const parsed = AssistantCreateParamsSchema.parse({
+      ...base,
+      disabled_context_tools: ["search_kb"],
+    });
+    expect(parsed.disabled_context_tools).toEqual(["search_kb"]);
+  });
+
+  it("accepts an empty list", () => {
+    const parsed = AssistantUpdateParamsSchema.parse({ ...base, disabled_context_tools: [] });
+    expect(parsed.disabled_context_tools).toEqual([]);
+  });
+
+  it("leaves the key absent when omitted", () => {
+    const parsed = AssistantCreateParamsSchema.parse(base);
+    expect("disabled_context_tools" in parsed).toBe(false);
+  });
+
+  it("rejects non-string items", () => {
+    expect(() =>
+      AssistantCreateParamsSchema.parse({ ...base, disabled_context_tools: [1] }),
     ).toThrow();
   });
 });
