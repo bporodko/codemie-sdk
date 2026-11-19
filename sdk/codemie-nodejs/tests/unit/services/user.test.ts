@@ -237,6 +237,32 @@ describe("UserService", () => {
       expect(result).toBeUndefined();
     });
 
+    it("remapUser POSTs the pair to the remap route", async () => {
+      const user = { id: "new", is_active: true };
+      apiHandler.post.mockResolvedValue(user);
+
+      const result = await service.remapUser("old", "new");
+      expect(apiHandler.post).toHaveBeenCalledWith("/v1/admin/users/remap", {
+        old_user_id: "old",
+        new_user_id: "new",
+      });
+      expect(result).toBe(user);
+    });
+
+    it("getAdminUserConversation GETs the scoped conversation with encoded ids", async () => {
+      const conv = { conversation_id: "c/1", user_id: "a/b" };
+      apiHandler.get.mockResolvedValue(conv);
+
+      const result = await service.getAdminUserConversation("a/b", "c/1");
+      expect(apiHandler.get).toHaveBeenCalledWith(`${base}/a%2Fb/conversations/c%2F1`);
+      expect(result).toBe(conv);
+    });
+
+    it("getAdminUserConversation rejects empty ids", async () => {
+      await expect(service.getAdminUserConversation("", "c")).rejects.toThrow("must not be empty");
+      await expect(service.getAdminUserConversation("u", "")).rejects.toThrow("must not be empty");
+    });
+
     it("reactivateUser POSTs the reactivate route and returns the user", async () => {
       const user = { id: "u1", is_active: true };
       apiHandler.post.mockResolvedValue(user);

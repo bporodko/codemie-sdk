@@ -8,6 +8,8 @@ import type {
   CsvImportValidationResponse,
   ListProjectsOptions,
   PaginatedProjectList,
+  ProjectAllowedModelsResponse,
+  ProjectAllowedModelsUpdateRequest,
   ProjectAssignmentResponse,
   ProjectCreateRequest,
   ProjectCreateResponse,
@@ -23,6 +25,7 @@ const bulkAssignSchema = z
   .array(z.object({ user_id: z.string(), is_project_admin: z.boolean() }))
   .min(1)
   .max(1000);
+const costCenterIdsSchema = z.array(z.string().uuid());
 const bulkRemoveSchema = z.array(z.string()).min(1).max(100);
 
 /** Unwrap the `data` envelope, falling back to the body when absent. */
@@ -64,6 +67,14 @@ export class ProjectService {
     if (options.search !== undefined) params.search = options.search;
     if (options.sort_by !== undefined) params.sort_by = options.sort_by;
 
+    const ids = options.cost_center_ids;
+    if (ids?.length) {
+      params.cost_center_ids = costCenterIdsSchema.parse(ids);
+      // repeated `cost_center_ids=a&cost_center_ids=b`, as the Python SDK sends
+      return this.api.get<PaginatedProjectList>("/v1/projects", params, {
+        paramsSerializer: { indexes: null },
+      });
+    }
     return this.api.get<PaginatedProjectList>("/v1/projects", params);
   }
 
@@ -82,6 +93,26 @@ export class ProjectService {
     );
     const payload = { clear_description: false, clear_cost_center: false, ...defined };
     return unwrap(await this.api.patch<unknown>(`/v1/projects/${enc(projectName)}`, payload));
+  }
+
+  /** PATCH /v1/projects/{name}/allowed-models */
+  async updateAllowedModels(
+    projectName: string,
+    request: ProjectAllowedModelsUpdateRequest = {},
+  ): Promise<ProjectAllowedModelsResponse> {
+    const payload = Object.fromEntries(
+      Object.entries(request).filter(([, value]) => value !== undefined && value !== null),
+    );
+    return unwrap(
+      await this.api.patch<unknown>(`/v1/projects/${enc(projectName)}/allowed-models`, payload),
+    );
+  }
+
+  /** DELETE /v1/projects/{name}/allowed-models: clears the restriction and the default model. */
+  async resetAllowedModels(projectName: string): Promise<ProjectAllowedModelsResponse> {
+    return unwrap(
+      await this.api.delete<unknown>(`/v1/projects/${enc(projectName)}/allowed-models`),
+    );
   }
 
   /** DELETE /v1/projects/{name} */

@@ -119,3 +119,10 @@ export interface AdminUserProject {
   is_default: boolean;
   date?: string | null;
 }
+
+/** A conversation fetched through the admin API; the backend document carries more fields. */
+export interface AdminUserConversation {
+  conversation_id: string;
+  user_id?: string | null;
+  [key: string]: unknown;
+}

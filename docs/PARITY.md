@@ -24,7 +24,7 @@ The Python SDK (`sdk/codemie-python`) and the Node.js SDK (`sdk/codemie-nodejs`)
 
 "Both" lists methods present on both sides under the naming rule (shown in Node form). "Python only" lists the Python names missing in Node. "Node only" lists Node methods with no same-named Python method (mostly renamed, for example `createProvider` versus `create_provider_datasource`). A row with `(gap)` has no Node module at all.
 
-New in this change: `project_exists` / `projectExists` (both SDKs), the whole Node `ProjectService` (`client.projects`) and the 11 admin methods of the Node `UserService`.
+New in this change: `project_exists` / `projectExists` (both SDKs), the whole Node `ProjectService` (`client.projects`) the admin methods of the Node `UserService`, and the later Python additions `update_allowed_models`, `reset_allowed_models`, `list_projects(cost_center_ids)`, `remap_user` and `get_admin_user_conversation`.
 
 | Python module | Node module | Both | Python only | Node only |
 |---------------|-------------|------|-------------|-----------|
@@ -49,13 +49,13 @@ New in this change: `project_exists` / `projectExists` (both SDKs), the whole No
 | `marketplace_management` | - (gap) | - | `get_overview`, `list_pending`, `list_marketplace_assistants`, `get_detail`, `approve`, `reject`, `force_publish`, `withdraw` | - |
 | `mcp_configs` | - (gap) | - | `create`, `get`, `list`, `clone`, `update`, `delete` | - |
 | `mermaid` | - (gap) | - | `generate_diagram` | - |
-| `project` | `project` | `createProject`, `listProjects`, `getProjectDetail`, `updateProject`, `deleteProject`, `transferOwnership`, `assignUserToProject`, `updateUserProjectAssignment`, `removeUserFromProject`, `bulkAssignUsersToProject`, `bulkRemoveUsersFromProject`, `validateUsersFromCsv`, `importUsersFromCsv`, `projectExists` | `update_allowed_models`, `reset_allowed_models` | - |
+| `project` | `project` | `createProject`, `listProjects`, `getProjectDetail`, `updateProject`, `deleteProject`, `transferOwnership`, `assignUserToProject`, `updateUserProjectAssignment`, `removeUserFromProject`, `bulkAssignUsersToProject`, `bulkRemoveUsersFromProject`, `validateUsersFromCsv`, `importUsersFromCsv`, `projectExists`, `updateAllowedModels`, `resetAllowedModels` | - | - |
 | `project_budget_groups` | - (gap) | - | `list_by_project`, `get`, `update`, `create`, `delete` | - |
 | `provisioning` | - (gap) | - | `with_token`, `list_projects`, `set_budget`, `adjust_budget`, `cancel_budget` | - |
 | `skill` | `skill` | `list`, `get`, `create`, `update`, `delete`, `importSkill`, `export`, `attachToAssistant`, `detachFromAssistant`, `getAssistantSkills`, `bulkAttachToAssistants`, `getSkillAssistants`, `listCompanionFiles`, `getCompanionFile`, `publish`, `unpublish`, `listCategories`, `getConfig`, `getUsers`, `react`, `removeReactions` | `record_event`, `get_events`, `get_events_stats`, `get_skill_stats`, `generate_instructions`, `generate`, `refine` | `listPaginated` |
 | `task` | `task` | `get` | - | - |
 | `usage_attribution` | - (gap) | - | `get_totals`, `get_status`, `get_cli_summary`, `get_settings`, `get_shared_projects`, `get_shared_project`, `get_repository_groups`, `get_repository_group`, `get_people`, `get_person`, `get_breakdown` | - |
-| `user` | `user` | `aboutMe`, `getData`, `listAdminUsers`, `getAdminUser`, `updateAdminUser`, `getUserProjects`, `assignUserToProject`, `removeUserFromProject`, `updateUserProjectRole`, `setDefaultProject`, `clearDefaultProject`, `deactivateUser`, `reactivateUser` | `remap_user`, `get_admin_user_conversation` | - |
+| `user` | `user` | `aboutMe`, `getData`, `listAdminUsers`, `getAdminUser`, `updateAdminUser`, `getUserProjects`, `assignUserToProject`, `removeUserFromProject`, `updateUserProjectRole`, `setDefaultProject`, `clearDefaultProject`, `deactivateUser`, `reactivateUser`, `remapUser`, `getAdminUserConversation` | - | - |
 | `vendor_assistant` | - (gap) | - | `get_assistant_settings`, `get_assistants`, `get_assistant`, `get_assistant_version`, `get_assistant_aliases`, `install_assistants`, `uninstall_assistant` | - |
 | `vendor_guardrail` | - (gap) | - | `get_guardrail_settings`, `get_guardrails`, `get_guardrail`, `get_guardrail_version`, `get_guardrail_versions`, `install_guardrails`, `uninstall_guardrail` | - |
 | `vendor_knowledgebase` | - (gap) | - | `get_knowledgebase_settings`, `get_knowledgebases`, `get_knowledgebase`, `install_knowledgebases`, `uninstall_knowledgebase` | - |
@@ -68,5 +68,3 @@ New in this change: `project_exists` / `projectExists` (both SDKs), the whole No
 | `workspace` | - (gap) | - | `create`, `get_by_conversation`, `list_files`, `write_file`, `read_file`, `delete_file`, `execute_script` | - |
 
 Python-only modules (no Node counterpart yet): `a2a`, `activity_event`, `admin`, `budgets`, `codemie_guardrails`, `cost_center`, `customer_config_service`, `dynamic_config`, `export`, `hosted_application`, `marketplace_management`, `mcp_configs`, `mermaid`, `project_budget_groups`, `provisioning`, `usage_attribution`, `webhook`, `workspace`, and the `vendor_*` services. The table is kept by hand (no generator exists); refresh it against `sdk/codemie-python/src/codemie_sdk/services/` and `sdk/codemie-nodejs/src/services/` when you change either.
-
-Known parameter gap: Python `list_projects` accepts `cost_center_ids`; Node `listProjects` does not send it yet.

@@ -702,6 +702,9 @@ const page = await client.projects.listProjects({ page: 0, per_page: 20, search:
 const detail = await client.projects.getProjectDetail('my-project');
 await client.projects.updateProject('my-project', { description: 'New text' });
 await client.projects.deleteProject('my-project');
+await client.projects.updateAllowedModels('my-project', { allowed_models: ['gpt-4o'], default_model: 'gpt-4o' });
+await client.projects.resetAllowedModels('my-project');
+const filtered = await client.projects.listProjects({ cost_center_ids: [costCenterId] });
 
 // Members
 await client.projects.assignUserToProject('my-project', userId, false);
@@ -742,6 +745,8 @@ await client.users.setDefaultProject(userId, 'my-project');
 await client.users.clearDefaultProject(userId, 'my-project');
 await client.users.deactivateUser(userId);
 await client.users.reactivateUser(userId);
+await client.users.remapUser(oldUserId, newUserId); // SuperAdmin only
+const conv = await client.users.getAdminUserConversation(userId, conversationId);
 ```
 
 ### Workflow Service

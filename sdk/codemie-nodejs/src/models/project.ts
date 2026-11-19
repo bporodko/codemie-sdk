@@ -116,6 +116,26 @@ export interface ProjectCreateResponse {
 
 export type ProjectUpdateResponse = ProjectCreateResponse;
 
+/** Body of the allowed-models update; a value for `allowed_models` needs a default model, stored or passed. */
+export interface ProjectAllowedModelsUpdateRequest {
+  allowed_models?: string[];
+  default_model?: string;
+}
+
+/** Project model settings after an update or a reset. */
+export interface ProjectAllowedModelsResponse {
+  name: string;
+  display_name?: string | null;
+  description?: string | null;
+  project_type: string;
+  created_by: string;
+  created_at: string;
+  cost_center_id?: string | null;
+  cost_center_name?: string | null;
+  allowed_models?: string[] | null;
+  default_model?: string | null;
+}
+
 export interface ProjectUpdateRequest {
   name?: string;
   /** Max 150 characters. */
@@ -184,4 +204,6 @@ export interface ListProjectsOptions {
   has_assigned_budgets?: boolean;
   sort_by?: "name" | "created_at";
   sort_order?: "asc" | "desc";
+  /** Only projects assigned to any of these cost centers (UUIDs); sent as repeated query params. */
+  cost_center_ids?: string[];
 }

@@ -65,6 +65,77 @@ describe("ProjectService", () => {
     });
   });
 
+  describe("allowed models", () => {
+    it("updateAllowedModels PATCHes only the defined fields and unwraps data", async () => {
+      api.patch.mockResolvedValue({ data: { name: "p", allowed_models: ["m1"] } });
+
+      const result = await service.updateAllowedModels("a/b", {
+        allowed_models: ["m1"],
+        default_model: undefined,
+      });
+
+      expect(api.patch).toHaveBeenCalledWith("/v1/projects/a%2Fb/allowed-models", {
+        allowed_models: ["m1"],
+      });
+      expect(result).toEqual({ name: "p", allowed_models: ["m1"] });
+    });
+
+    it("updateAllowedModels sends an empty body when nothing is passed", async () => {
+      api.patch.mockResolvedValue({ data: {} });
+      await service.updateAllowedModels("p");
+      expect(api.patch).toHaveBeenCalledWith("/v1/projects/p/allowed-models", {});
+    });
+
+    it("resetAllowedModels DELETEs the route and unwraps data", async () => {
+      api.delete.mockResolvedValue({ data: { name: "p", allowed_models: null } });
+      const result = await service.resetAllowedModels("p");
+      expect(api.delete).toHaveBeenCalledWith("/v1/projects/p/allowed-models");
+      expect(result).toEqual({ name: "p", allowed_models: null });
+    });
+
+    it("rejects an empty project name", async () => {
+      await expect(service.updateAllowedModels("")).rejects.toThrow("must not be empty");
+      await expect(service.resetAllowedModels("")).rejects.toThrow("must not be empty");
+    });
+  });
+
+  describe("listProjects cost_center_ids", () => {
+    const id1 = "11111111-1111-4111-8111-111111111111";
+    const id2 = "22222222-2222-4222-8222-222222222222";
+
+    it("sends the ids with a repeating serializer", async () => {
+      api.get.mockResolvedValue({ data: [], pagination: {} });
+      await service.listProjects({ cost_center_ids: [id1, id2] });
+      const [, params, config] = api.get.mock.calls[0];
+      expect(params.cost_center_ids).toEqual([id1, id2]);
+      expect(config).toEqual({ paramsSerializer: { indexes: null } });
+    });
+
+    it("omits the parameter when the list is empty", async () => {
+      api.get.mockResolvedValue({ data: [], pagination: {} });
+      await service.listProjects({ cost_center_ids: [] });
+      expect(api.get.mock.calls[0][1]).not.toHaveProperty("cost_center_ids");
+      expect(api.get.mock.calls[0]).toHaveLength(2);
+    });
+
+    it("rejects an invalid UUID before the request", async () => {
+      await expect(service.listProjects({ cost_center_ids: ["nope"] })).rejects.toBeInstanceOf(
+        ZodError,
+      );
+      expect(api.get).not.toHaveBeenCalled();
+    });
+
+    it("serializes repeated keys with axios (no brackets)", () => {
+      const axios = require("axios");
+      const uri = axios.getUri({
+        url: "/v1/projects",
+        params: { page: 0, cost_center_ids: [id1, id2] },
+        paramsSerializer: { indexes: null },
+      });
+      expect(uri).toBe(`/v1/projects?page=0&cost_center_ids=${id1}&cost_center_ids=${id2}`);
+    });
+  });
+
   describe("listProjects", () => {
     it("types current_spending on list items", async () => {
       const item: import("../../../src/models/project").ProjectListItem = {

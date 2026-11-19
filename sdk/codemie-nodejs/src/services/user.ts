@@ -3,6 +3,7 @@ import type { AuthConfig } from "../models/common";
 import type {
   AboutUser,
   AboutUserResponse,
+  AdminUserConversation,
   AdminUserProject,
   AdminUserUpdate,
   CodeMieUserDetail,
@@ -138,5 +139,24 @@ export class UserService {
   /** Reactivate a user. Has its own endpoint: updating with is_active=true is refused by the API. */
   async reactivateUser(id: string): Promise<CodeMieUserDetail> {
     return this.api.post(this.adminPath(id, "reactivate"));
+  }
+
+  /** Remap a pre-Keycloak user id to a new id (SuperAdmin only). Re-running the same pair is a no-op. */
+  async remapUser(oldUserId: string, newUserId: string): Promise<CodeMieUserDetail> {
+    return this.api.post("/v1/admin/users/remap", {
+      old_user_id: oldUserId,
+      new_user_id: newUserId,
+    });
+  }
+
+  /** Get a conversation scoped to the user id it must belong to (admin only). */
+  async getAdminUserConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<AdminUserConversation> {
+    if (!conversationId) throw new Error("conversation id must not be empty");
+    return this.api.get(
+      this.adminPath(userId, "conversations", encodeURIComponent(conversationId)),
+    );
   }
 }
