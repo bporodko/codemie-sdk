@@ -121,8 +121,6 @@ class ProjectDetailResponse(BaseModel):
     members: list[ProjectMember]
     enforce_member_spend_limits: bool = False
     chargeback_enabled: bool = False
-    allowed_models: list[str] | None = None
-    default_model: str | None = None
     chargeback_attribution: str = "project"
     allowed_models: list[str] | None = Field(
         default=None,
