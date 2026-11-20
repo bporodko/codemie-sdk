@@ -412,14 +412,28 @@ class HostedApplicationService:
         )
 
     def marketplace_publish(
-        self, app_id: str, if_match: str, idempotency_key: str | None = None
+        self,
+        app_id: str,
+        if_match: str,
+        idempotency_key: str | None = None,
+        categories: list[str] | None = None,
     ) -> HostedApplication:
-        """Publish an application to the marketplace."""
+        """Publish an application to the marketplace.
+
+        Args:
+            app_id: Application id
+            if_match: ``etag`` of the application
+            idempotency_key: Key to repeat the request safely
+            categories: 1 to 3 category ids to publish under; they replace the
+                categories of the application. The platform refuses a publication
+                without them, so leaving this out only works against a platform
+                that does not ask for categories.
+        """
         return self._api.request(
             "POST",
             self._path(app_id, "marketplace", "publish"),
             HostedApplication,
-            json_data={},
+            json_data={} if categories is None else {"categories": categories},
             extra_headers=self._headers(if_match, idempotency_key),
             wrap_response=False,
         )

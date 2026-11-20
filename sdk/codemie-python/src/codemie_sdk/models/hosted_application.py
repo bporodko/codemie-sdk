@@ -58,6 +58,15 @@ class HostedApplicationCreator(BaseModel):
     name: str | None = None
 
 
+class HostedApplicationCategory(BaseModel):
+    """A category of an application: its id and its name."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str
+    name: str
+
+
 class HostedApplication(BaseModel):
     """An application as the caller sees it.
 
@@ -75,6 +84,10 @@ class HostedApplication(BaseModel):
     project: str | None = None
     shared: bool = False
     is_global: bool = False
+    categories: list[HostedApplicationCategory] = Field(
+        default_factory=list,
+        description="Categories of the application, in the order they were set",
+    )
     created_by: HostedApplicationCreator | None = None
     user_abilities: list[str] = Field(default_factory=list)
     can_share: bool = False

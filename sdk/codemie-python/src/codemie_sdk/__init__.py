@@ -217,9 +217,11 @@ from .models.provisioning import (
     ProvisioningBudgetResult,
 )
 from .services.provisioning import ProvisioningService
+from .services.export import ExportService
 from .models.hosted_application import (
     HostedApplication,
     HostedApplicationCapabilities,
+    HostedApplicationCategory,
     HostedApplicationCreator,
     HostedApplicationDeletion,
     HostedApplicationDeletionStatus,
@@ -395,6 +397,7 @@ __all__ = [
     "ProvisioningBudgetResponse",
     "ProvisioningBudgetResult",
     "ProvisioningService",
+    "ExportService",
     "MarketplaceStatusFilter",
     "MarketplaceGateResult",
     "MarketplacePendingOrderBy",
@@ -413,6 +416,7 @@ __all__ = [
     "MarketplaceManagementService",
     "HostedApplication",
     "HostedApplicationCapabilities",
+    "HostedApplicationCategory",
     "HostedApplicationCreator",
     "HostedApplicationDeletion",
     "HostedApplicationDeletionStatus",
